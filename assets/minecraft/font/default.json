@@ -1,0 +1,22 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/custom_graph3.png",
+      "ascent": 13,
+      "height": 256,
+      "chars": [
+        "샮"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "minecraft:font/void.png",
+      "ascent": -32768,
+      "height": -10,
+      "chars": [
+        "궯"
+      ]
+    }
+  ]
+}
