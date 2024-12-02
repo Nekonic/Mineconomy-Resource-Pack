@@ -1,7 +1,7 @@
 {
     "parent": "item/handheld",
     "textures": {
-      "layer0": "item/stick"
+      "layer0": "item/potion"
     },
     "overrides": [
       { "predicate": { "custom_model_data": 101 }, "model": "item/graph/horizontal_top" },
