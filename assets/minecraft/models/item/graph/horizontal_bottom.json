@@ -1,6 +1,6 @@
 {
     "parent": "item/generated",
     "textures": {
-        "layer0": "textures/item/graph/horizontal_bottom"
+        "layer0": "item/graph/horizontal_bottom"
     }
 }
