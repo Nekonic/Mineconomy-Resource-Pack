@@ -4,16 +4,16 @@
       "layer0": "item/potion"
     },
     "overrides": [
-      { "predicate": { "custom_model_data": 101 }, "model": "item/graph/horizontal_top" },
-      { "predicate": { "custom_model_data": 102 }, "model": "item/graph/horizontal_bottom" },
-      { "predicate": { "custom_model_data": 103 }, "model": "item/graph/vertical_left" },
-      { "predicate": { "custom_model_data": 104 }, "model": "item/graph/vertical_right" },
-      { "predicate": { "custom_model_data": 105 }, "model": "item/graph/diagonal_up" },
-      { "predicate": { "custom_model_data": 106 }, "model": "item/graph/diagonal_down" },
-      { "predicate": { "custom_model_data": 107 }, "model": "item/graph/corner_top_left" },
-      { "predicate": { "custom_model_data": 108 }, "model": "item/graph/corner_top_right" },
-      { "predicate": { "custom_model_data": 109 }, "model": "item/graph/corner_bottom_left" },
-      { "predicate": { "custom_model_data": 110 }, "model": "item/graph/corner_bottom_right" }
+      { "predicate": { "custom_model_data": 101 }, "model": "item/graph/_0001" },
+      { "predicate": { "custom_model_data": 102 }, "model": "item/graph/_0010" },
+      { "predicate": { "custom_model_data": 103 }, "model": "item/graph/_0011" },
+      { "predicate": { "custom_model_data": 104 }, "model": "item/graph/_0100" },
+      { "predicate": { "custom_model_data": 105 }, "model": "item/graph/_0101" },
+      { "predicate": { "custom_model_data": 106 }, "model": "item/graph/_0110" },
+      { "predicate": { "custom_model_data": 108 }, "model": "item/graph/_1000" },
+      { "predicate": { "custom_model_data": 109 }, "model": "item/graph/_1001" },
+      { "predicate": { "custom_model_data": 110 }, "model": "item/graph/_1010" },
+      { "predicate": { "custom_model_data": 112 }, "model": "item/graph/_1100" }
     ]
   }
   
