@@ -1,6 +1,6 @@
 {
     "parent": "item/generated",
     "textures": {
-        "layer0": "item/graph/diagonal_up"
+        "layer0": "item/graph/_0011"
     }
 }
