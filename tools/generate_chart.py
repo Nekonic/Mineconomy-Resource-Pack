@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
 """
-Mineconomy 차트 조각 텍스처 + 모델 JSON 일괄 생성
+Mineconomy 차트 조각 텍스처 + 모델 JSON 생성
 실행 위치: mineconomy-resource-pack/  (서브모듈 루트)
 의존성:    pip install Pillow
 
-비트 레이아웃 (2열 × 4행, 위→아래 / 좌→우):
-    [bit7][bit6]  ← top
-    [bit5][bit4]
-    [bit3][bit2]
-    [bit1][bit0]  ← bottom
+개요:
+    8개 단일 세그먼트 프리미티브를 생성한다.
+    각 프리미티브는 16×16 텍스처에서 단 하나의 8×4 구역만 흰색으로 채운다.
+    차트 렌더링 시 인벤토리 슬롯 여러 개에 개별적으로 배치하고,
+    PotionMeta.setColor()로 색상을 지정한다.
+    어떤 슬롯을 채울지는 플러그인 코드에서 결정 → F자 패턴 원천 불가.
 
-custom_model_data:
-    mask (1–255) 을 그대로 CMD 값으로 사용
-    예) 0b00000001 = 1  → 우하단 하나만
-        0b11111111 = 255 → 전체 채움
+인벤토리 슬롯 배치 (2열 × 4행 그리드, 위→아래):
+    [bit7 CMD=1][bit6 CMD=2]  ← 상단
+    [bit5 CMD=3][bit4 CMD=4]
+    [bit3 CMD=5][bit2 CMD=6]
+    [bit1 CMD=7][bit0 CMD=8]  ← 하단
+
+custom_model_data: 1(bit7, 좌상단) ~ 8(bit0, 우하단)
+채움 순서 예시 (아래→위, 좌→우): CMD 7→8→5→6→3→4→1→2
 """
 
 from PIL import Image
@@ -26,17 +31,30 @@ COLS, ROWS   = 2, 4
 SEG_W        = TEXTURE_SIZE // COLS   # 8 px
 SEG_H        = TEXTURE_SIZE // ROWS   # 4 px
 
-FILL = (255, 255, 255, 255)   # 흰색 (불투명)
+FILL = (255, 255, 255, 255)   # 흰색 (불투명) — PotionMeta.setColor()로 착색됨
 BG   = (0,   0,   0,   0)    # 투명
 
 TEXTURES_DIR = "assets/minecraft/textures/item/graph"
 MODELS_DIR   = "assets/minecraft/models/item/graph"
 POTION_JSON  = "assets/minecraft/models/item/potion.json"
 
+# bit7=0 ~ bit0=7 순서로 세그먼트 인덱스 매핑
+# segment = 7 - bit  →  col = segment % 2,  row = segment // 2
+PRIMITIVES = [
+    # (cmd, bit, name)
+    (1, 7, "_bit7"),  # 좌상단
+    (2, 6, "_bit6"),  # 우상단
+    (3, 5, "_bit5"),
+    (4, 4, "_bit4"),
+    (5, 3, "_bit3"),
+    (6, 2, "_bit2"),
+    (7, 1, "_bit1"),
+    (8, 0, "_bit0"),  # 우하단
+]
+
 # ── 실행 ──────────────────────────────────────────────────────────────────────
 
 def main():
-    # 기존 파일 전부 교체
     for d in (TEXTURES_DIR, MODELS_DIR):
         if os.path.isdir(d):
             shutil.rmtree(d)
@@ -44,22 +62,19 @@ def main():
 
     overrides = []
 
-    for mask in range(1, 256):
-        name = f"_{mask:08b}"   # e.g. _00000001
-
+    for cmd, bit, name in PRIMITIVES:
         # ── PNG 생성 ──────────────────────────────────────────────────────────
         img = Image.new("RGBA", (TEXTURE_SIZE, TEXTURE_SIZE), BG)
         px  = img.load()
 
-        for bit in range(8):
-            if mask & (1 << (7 - bit)):   # bit7 = 맨 위 왼쪽 … bit0 = 맨 아래 오른쪽
-                col = bit % COLS
-                row = bit // COLS
-                x0  = col * SEG_W
-                y0  = row * SEG_H
-                for x in range(x0, x0 + SEG_W):
-                    for y in range(y0, y0 + SEG_H):
-                        px[x, y] = FILL
+        segment = 7 - bit
+        col = segment % COLS
+        row = segment // COLS
+        x0  = col * SEG_W
+        y0  = row * SEG_H
+        for x in range(x0, x0 + SEG_W):
+            for y in range(y0, y0 + SEG_H):
+                px[x, y] = FILL
 
         img.save(os.path.join(TEXTURES_DIR, name + ".png"))
 
@@ -72,7 +87,7 @@ def main():
             json.dump(model, f, indent=2)
 
         overrides.append({
-            "predicate": {"custom_model_data": mask},
+            "predicate": {"custom_model_data": cmd},
             "model": f"item/graph/{name}"
         })
 
@@ -85,21 +100,18 @@ def main():
     with open(POTION_JSON, "w") as f:
         json.dump(potion, f, indent=2)
 
-    print(f"생성 완료: {len(overrides)}개 텍스처 / 모델 / potion.json")
+    print(f"생성 완료: {len(overrides)}개 프리미티브 텍스처 / 모델 / potion.json")
     print()
-    print("비트 레이아웃:")
-    print("  [bit7][bit6]  ← 상단")
-    print("  [bit5][bit4]")
-    print("  [bit3][bit2]")
-    print("  [bit1][bit0]  ← 하단")
+    print("슬롯 배치 (2×4 그리드):")
+    print("  [bit7 CMD=1][bit6 CMD=2]  ← 상단")
+    print("  [bit5 CMD=3][bit4 CMD=4]")
+    print("  [bit3 CMD=5][bit2 CMD=6]")
+    print("  [bit1 CMD=7][bit0 CMD=8]  ← 하단")
     print()
-    print("CMD 범위: 1 (0b00000001) ~ 255 (0b11111111)")
-    print("바 차트 예시 (아래→위 순서로 채움):")
-    for level in range(9):
-        mask_val = (1 << level) - 1  # 하위 level 비트 모두 set
-        # 비트를 아래에서 위로 채우려면 bit0=하단우, bit7=상단좌 기준 반전 필요
-        # 실제 채움 순서는 플러그인 렌더러에서 결정
-        print(f"  level {level}/8 → mask 0b{mask_val:08b} = {mask_val}")
+    print("코드 사용법:")
+    print("  - 채울 슬롯: potion item, CMD=해당 비트 번호, PotionMeta.setColor(color)")
+    print("  - 빈 슬롯: 다른 아이템(예: 어두운 유리판) 또는 빈 슬롯")
+    print("  - 채움 순서(하단→상단): CMD 7→8→5→6→3→4→1→2")
 
 if __name__ == "__main__":
     main()
