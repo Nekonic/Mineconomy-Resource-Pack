@@ -36,7 +36,7 @@ BG   = (0,   0,   0,   0)    # 투명
 
 TEXTURES_DIR = "assets/minecraft/textures/item/graph"
 MODELS_DIR   = "assets/minecraft/models/item/graph"
-POTION_JSON  = "assets/minecraft/models/item/potion.json"
+POTION_JSON  = "assets/minecraft/items/potion.json"   # 1.21.4+ item definition
 
 # bit7=0 ~ bit0=7 순서로 세그먼트 인덱스 매핑
 # segment = 7 - bit  →  col = segment % 2,  row = segment // 2
@@ -60,7 +60,7 @@ def main():
             shutil.rmtree(d)
         os.makedirs(d)
 
-    overrides = []
+    entries = []
 
     for cmd, bit, name in PRIMITIVES:
         # ── PNG 생성 ──────────────────────────────────────────────────────────
@@ -86,21 +86,25 @@ def main():
         with open(os.path.join(MODELS_DIR, name + ".json"), "w") as f:
             json.dump(model, f, indent=2)
 
-        overrides.append({
-            "predicate": {"custom_model_data": cmd},
-            "model": f"item/graph/{name}"
+        entries.append({
+            "threshold": cmd,
+            "model": {"type": "minecraft:model", "model": f"item/graph/{name}"}
         })
 
-    # ── potion.json 재생성 ────────────────────────────────────────────────────
+    # ── items/potion.json 재생성 (1.21.4+ range_dispatch 포맷) ────────────────
+    os.makedirs(os.path.dirname(POTION_JSON), exist_ok=True)
     potion = {
-        "parent": "item/handheld",
-        "textures": {"layer0": "item/potion"},
-        "overrides": overrides
+        "model": {
+            "type": "minecraft:range_dispatch",
+            "property": "minecraft:custom_model_data",
+            "entries": entries,
+            "fallback": {"type": "minecraft:model", "model": "item/potion"}
+        }
     }
     with open(POTION_JSON, "w") as f:
         json.dump(potion, f, indent=2)
 
-    print(f"생성 완료: {len(overrides)}개 프리미티브 텍스처 / 모델 / potion.json")
+    print(f"생성 완료: {len(entries)}개 프리미티브 텍스처 / 모델 / items/potion.json")
     print()
     print("슬롯 배치 (2×4 그리드):")
     print("  [bit7 CMD=1][bit6 CMD=2]  ← 상단")
