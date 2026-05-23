@@ -1,7 +1,7 @@
-﻿{
+{
   "parent": "item/generated",
   "textures": {
-    "layer0": "item/graph/_bit4"
+    "layer0": "item/graph/_full"
   },
   "tints": [
     {

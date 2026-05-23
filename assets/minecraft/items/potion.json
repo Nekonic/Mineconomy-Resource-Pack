@@ -3,14 +3,20 @@
     "type": "minecraft:range_dispatch",
     "property": "minecraft:custom_model_data",
     "entries": [
-      {"threshold": 1, "model": {"type": "minecraft:model", "model": "item/graph/_bit7"}},
-      {"threshold": 2, "model": {"type": "minecraft:model", "model": "item/graph/_bit6"}},
-      {"threshold": 3, "model": {"type": "minecraft:model", "model": "item/graph/_bit5"}},
-      {"threshold": 4, "model": {"type": "minecraft:model", "model": "item/graph/_bit4"}},
-      {"threshold": 5, "model": {"type": "minecraft:model", "model": "item/graph/_bit3"}},
-      {"threshold": 6, "model": {"type": "minecraft:model", "model": "item/graph/_bit2"}},
-      {"threshold": 7, "model": {"type": "minecraft:model", "model": "item/graph/_bit1"}},
-      {"threshold": 8, "model": {"type": "minecraft:model", "model": "item/graph/_bit0"}}
+      {
+        "threshold": 1,
+        "model": {
+          "type": "minecraft:model",
+          "model": "item/graph/_full"
+        }
+      },
+      {
+        "threshold": 2,
+        "model": {
+          "type": "minecraft:model",
+          "model": "item/graph/_half"
+        }
+      }
     ],
     "fallback": {
       "type": "minecraft:model",
