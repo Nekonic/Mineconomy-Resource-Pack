@@ -1,6 +1,12 @@
-{
+﻿{
   "parent": "item/generated",
   "textures": {
     "layer0": "item/graph/_bit5"
-  }
+  },
+  "tints": [
+    {
+      "type": "minecraft:potion",
+      "default": 16777215
+    }
+  ]
 }

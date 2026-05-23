@@ -81,7 +81,8 @@ def main():
         # ── model JSON 생성 ───────────────────────────────────────────────────
         model = {
             "parent": "item/generated",
-            "textures": {"layer0": f"item/graph/{name}"}
+            "textures": {"layer0": f"item/graph/{name}"},
+            "tints": [{"type": "minecraft:potion", "default": 16777215}]
         }
         with open(os.path.join(MODELS_DIR, name + ".json"), "w") as f:
             json.dump(model, f, indent=2)
