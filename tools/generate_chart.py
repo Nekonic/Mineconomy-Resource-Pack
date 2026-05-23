@@ -61,15 +61,18 @@ def main():
         # ── model JSON 생성 ───────────────────────────────────────────────────
         model = {
             "parent": "item/generated",
-            "textures": {"layer0": f"item/graph/{name}"},
-            "tints": [{"type": "minecraft:potion", "default": 16777215}]
+            "textures": {"layer0": f"item/graph/{name}"}
         }
         with open(os.path.join(MODELS_DIR, name + ".json"), "w") as f:
             json.dump(model, f, indent=2)
 
         entries.append({
             "threshold": cmd,
-            "model": {"type": "minecraft:model", "model": f"item/graph/{name}"}
+            "model": {
+                "type": "minecraft:model",
+                "model": f"item/graph/{name}",
+                "tints": [{"type": "minecraft:potion", "default": 16777215}]
+            }
         })
 
     # ── items/potion.json 재생성 (1.21.4+ range_dispatch 포맷) ────────────────

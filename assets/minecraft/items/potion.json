@@ -7,14 +7,16 @@
         "threshold": 1,
         "model": {
           "type": "minecraft:model",
-          "model": "item/graph/_full"
+          "model": "item/graph/_full",
+          "tints": [{"type": "minecraft:potion", "default": 16777215}]
         }
       },
       {
         "threshold": 2,
         "model": {
           "type": "minecraft:model",
-          "model": "item/graph/_half"
+          "model": "item/graph/_half",
+          "tints": [{"type": "minecraft:potion", "default": 16777215}]
         }
       }
     ],
