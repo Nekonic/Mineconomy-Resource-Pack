@@ -6,7 +6,9 @@ Mineconomy 차트 조각 텍스처 + 모델 JSON 생성
 
 개요:
     비트 하나당 PNG 하나(총 16개)를 생성하고,
-    레벨 모델 JSON에서 layer 조합으로 렌더링한다.
+    각 비트 모델은 단일 레이어(1 layer)로 구성한다.
+    drawBar()에서 각 셀마다 해당 비트의 CMD를 사용하므로
+    item/generated 5-레이어 한계 문제가 없다.
 
     비트 배치 (MSB=bit15, LSB=bit0):
         bit15 bit14 bit13 bit12   ← row 0 (top)
@@ -15,6 +17,7 @@ Mineconomy 차트 조각 텍스처 + 모델 JSON 생성
          bit3  bit2  bit1  bit0   ← row 3 (bottom)
 
     bar 채움 순서: row3 왼→오른, row2 왼→오른, ... (level 1~16)
+    CMD = 1 << bit  (개별 비트 값)
 """
 
 from PIL import Image
@@ -29,24 +32,8 @@ TEXTURES_DIR = "assets/minecraft/textures/item/graph"
 MODELS_DIR   = "assets/minecraft/models/item/graph"
 POTION_JSON  = "assets/minecraft/items/potion.json"
 
-# level i 에서 채워지는 셀의 비트 위치 (row3 왼→오른, row2 왼→오른, ...)
-FILL_ORDER = [
-    (3 - row) * 4 + (3 - col)
-    for row in range(3, -1, -1)
-    for col in range(4)
-]
-
 def bit_name(bit: int) -> str:
     return "_" + format(1 << bit, "016b")
-
-def level_pattern(level: int) -> int:
-    pattern = 0
-    for i in range(level):
-        pattern |= (1 << FILL_ORDER[i])
-    return pattern
-
-def pattern_name(pattern: int) -> str:
-    return "_" + format(pattern, "016b")
 
 def main():
     for d in (TEXTURES_DIR, MODELS_DIR):
@@ -54,8 +41,10 @@ def main():
             shutil.rmtree(d)
         os.makedirs(d)
 
-    # ── 기본 텍스처 16개: 비트 하나씩 ────────────────────────────────────────
+    entries = []
+
     for bit in range(16):
+        # 텍스처: 해당 비트 위치에 4×4 셀 하나만 흰색
         row = 3 - (bit // 4)
         col = 3 - (bit % 4)
         img = Image.new("RGBA", (TEXTURE_SIZE, TEXTURE_SIZE), BG)
@@ -66,29 +55,21 @@ def main():
                 px[x, y] = FILL
         img.save(os.path.join(TEXTURES_DIR, bit_name(bit) + ".png"))
 
-    # ── 레벨 모델 JSON 16개: 각 비트 텍스처를 layer로 조합 ───────────────────
-    entries = []
-
-    for level in range(1, 17):
-        pattern = level_pattern(level)
-        name    = pattern_name(pattern)
-        cmd     = float(pattern)
-
-        textures = {}
-        layer = 0
-        for bit in range(16):
-            if pattern & (1 << bit):
-                textures[f"layer{layer}"] = f"item/graph/{bit_name(bit)}"
-                layer += 1
-
-        model = {"parent": "item/generated", "textures": textures}
-        with open(os.path.join(MODELS_DIR, name + ".json"), "w") as f:
+        # 모델: 단일 레이어 (1-layer, 5-레이어 한계 안전)
+        model = {
+            "parent": "item/generated",
+            "textures": {"layer0": f"item/graph/{bit_name(bit)}"}
+        }
+        with open(os.path.join(MODELS_DIR, bit_name(bit) + ".json"), "w") as f:
             json.dump(model, f, indent=2)
 
         entries.append({
-            "threshold": cmd,
-            "model": {"type": "minecraft:model", "model": f"item/graph/{name}"}
+            "threshold": float(1 << bit),
+            "model": {"type": "minecraft:model", "model": f"item/graph/{bit_name(bit)}"}
         })
+
+    # threshold 오름차순 정렬 (range_dispatch 요구사항)
+    entries.sort(key=lambda e: e["threshold"])
 
     # ── items/potion.json ─────────────────────────────────────────────────────
     os.makedirs(os.path.dirname(POTION_JSON), exist_ok=True)
@@ -103,7 +84,8 @@ def main():
     with open(POTION_JSON, "w") as f:
         json.dump(potion, f, indent=2)
 
-    print(f"기본 텍스처 16개 + 레벨 모델 {len(entries)}개 / items/potion.json 생성 완료")
+    print(f"비트 텍스처/모델 {len(entries)}개 (단일 레이어) + items/potion.json 생성 완료")
+    print("CMD 값: " + ", ".join(str(int(e['threshold'])) for e in entries))
 
 if __name__ == "__main__":
     main()

@@ -1,7 +1,0 @@
-{
-  "parent": "item/generated",
-  "textures": {
-    "layer0": "item/graph/_0000000000000100",
-    "layer1": "item/graph/_0000000000001000"
-  }
-}
