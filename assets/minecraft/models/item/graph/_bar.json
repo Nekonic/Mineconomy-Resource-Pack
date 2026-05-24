@@ -1,6 +1,6 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "item/graph/_1000000000000000"
+    "layer0": "item/graph/_bar"
   }
 }
