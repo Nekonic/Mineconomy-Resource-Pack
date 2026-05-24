@@ -5,23 +5,60 @@ Mineconomy 차트 조각 텍스처 + 모델 JSON 생성
 의존성:    pip install Pillow
 
 개요:
-    바 차트 셀용 솔리드(16x16 전체 흰색) 텍스처 1개만 생성.
-    drawBar()에서 채워진 슬롯에만 이 아이템을 배치하고,
-    빈 슬롯에는 아무것도 두지 않는다.
-    포션 색상(PotionMeta.color)이 흰색에 곱해져 바 색상이 표시된다.
+    비트 하나당 기본 텍스처 16개를 생성하고,
+    레벨별 누적 패턴을 Python에서 pre-render하여
+    단일 레이어 모델 16개를 생성한다.
+
+    item/generated 5-레이어 한계를 Python 합성으로 회피:
+      - 레이어 조합: Minecraft 런타임 → 5개 초과 불가
+      - pre-render:  Python PIL 합성 → 제한 없음
+
+    비트 배치 (MSB=bit15, LSB=bit0):
+        bit15 bit14 bit13 bit12   ← row 0 (top)
+        bit11 bit10  bit9  bit8   ← row 1
+         bit7  bit6  bit5  bit4   ← row 2
+         bit3  bit2  bit1  bit0   ← row 3 (bottom)
+
+    bar 채움 순서: row3 왼→오른, row2 왼→오른, ... (level 1~16)
 """
 
 from PIL import Image
 import json, os, shutil
 
 TEXTURE_SIZE = 16
+CELL_SIZE    = 4
 FILL = (255, 255, 255, 255)
+BG   = (0, 0, 0, 0)
 
 TEXTURES_DIR = "assets/minecraft/textures/item/graph"
 MODELS_DIR   = "assets/minecraft/models/item/graph"
 POTION_JSON  = "assets/minecraft/items/potion.json"
 
-BAR_NAME = "_bar"
+FILL_ORDER = [
+    (3 - row) * 4 + (3 - col)
+    for row in range(3, -1, -1)
+    for col in range(4)
+]
+
+def bit_name(bit: int) -> str:
+    return "_" + format(1 << bit, "016b")
+
+def level_pattern(level: int) -> int:
+    pattern = 0
+    for i in range(level):
+        pattern |= (1 << FILL_ORDER[i])
+    return pattern
+
+def pattern_name(pattern: int) -> str:
+    return "_" + format(pattern, "016b")
+
+def draw_cell(px, bit: int):
+    row = 3 - (bit // 4)
+    col = 3 - (bit % 4)
+    x0, y0 = col * CELL_SIZE, row * CELL_SIZE
+    for x in range(x0, x0 + CELL_SIZE):
+        for y in range(y0, y0 + CELL_SIZE):
+            px[x, y] = FILL
 
 def main():
     for d in (TEXTURES_DIR, MODELS_DIR):
@@ -29,40 +66,56 @@ def main():
             shutil.rmtree(d)
         os.makedirs(d)
 
-    # 솔리드 텍스처: 16x16 전체 흰색
-    img = Image.new("RGBA", (TEXTURE_SIZE, TEXTURE_SIZE), FILL)
-    img.save(os.path.join(TEXTURES_DIR, BAR_NAME + ".png"))
+    # ── 기본 텍스처 16개: 비트 하나씩 (구조 문서화 목적으로 보존) ─────────────
+    for bit in range(16):
+        img = Image.new("RGBA", (TEXTURE_SIZE, TEXTURE_SIZE), BG)
+        draw_cell(img.load(), bit)
+        img.save(os.path.join(TEXTURES_DIR, bit_name(bit) + ".png"))
 
-    # 단일 레이어 모델
-    model = {
-        "parent": "item/generated",
-        "textures": {"layer0": f"item/graph/{BAR_NAME}"}
-    }
-    with open(os.path.join(MODELS_DIR, BAR_NAME + ".json"), "w") as f:
-        json.dump(model, f, indent=2)
+    # ── 레벨별 pre-render 텍스처 16개 + 단일 레이어 모델 ────────────────────
+    entries = []
 
-    # items/potion.json: threshold 1.0 → _bar 모델
+    for level in range(1, 17):
+        pattern = level_pattern(level)
+        name    = pattern_name(pattern)
+        cmd     = float(pattern)
+
+        # Python PIL로 합성 → 단일 PNG (5-레이어 한계 없음)
+        img = Image.new("RGBA", (TEXTURE_SIZE, TEXTURE_SIZE), BG)
+        px  = img.load()
+        for bit in range(16):
+            if pattern & (1 << bit):
+                draw_cell(px, bit)
+        img.save(os.path.join(TEXTURES_DIR, name + ".png"))
+
+        # 단일 레이어 모델
+        model = {
+            "parent": "item/generated",
+            "textures": {"layer0": f"item/graph/{name}"}
+        }
+        with open(os.path.join(MODELS_DIR, name + ".json"), "w") as f:
+            json.dump(model, f, indent=2)
+
+        entries.append({
+            "threshold": cmd,
+            "model": {"type": "minecraft:model", "model": f"item/graph/{name}"}
+        })
+
+    # ── items/potion.json ─────────────────────────────────────────────────────
     os.makedirs(os.path.dirname(POTION_JSON), exist_ok=True)
     potion = {
         "model": {
             "type": "minecraft:range_dispatch",
             "property": "minecraft:custom_model_data",
-            "entries": [
-                {
-                    "threshold": 1.0,
-                    "model": {"type": "minecraft:model", "model": f"item/graph/{BAR_NAME}"}
-                }
-            ],
+            "entries": entries,
             "fallback": {"type": "minecraft:model", "model": "item/potion"}
         }
     }
     with open(POTION_JSON, "w") as f:
         json.dump(potion, f, indent=2)
 
-    print(f"솔리드 텍스처 1개 + 모델 1개 / items/potion.json 생성 완료")
-    print(f"  텍스처: {TEXTURES_DIR}/{BAR_NAME}.png (16x16 전체 흰색)")
-    print(f"  모델: {MODELS_DIR}/{BAR_NAME}.json (단일 레이어)")
-    print(f"  CMD 임계값: 1.0")
+    print(f"기본 비트 텍스처 16개 + 레벨 pre-render 텍스처 16개")
+    print(f"단일 레이어 모델 {len(entries)}개 / items/potion.json 생성 완료")
 
 if __name__ == "__main__":
     main()
