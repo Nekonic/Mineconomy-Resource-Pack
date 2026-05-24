@@ -1,0 +1,10 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "item/graph/_0000000000000001",
+    "layer1": "item/graph/_0000000000000010",
+    "layer2": "item/graph/_0000000000000100",
+    "layer3": "item/graph/_0000000000001000",
+    "layer4": "item/graph/_0000000010000000"
+  }
+}
